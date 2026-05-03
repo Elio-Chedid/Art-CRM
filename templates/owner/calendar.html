@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1>
+                <i class="fas fa-calendar-alt gradient-text"></i> Reservation Calendar
+            </h1>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary" id="prevMonth">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="todayBtn">
+                    <i class="fas fa-calendar-day"></i> Today
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="nextMonth">
+                    <i class="fas fa-chevron-right"></i> Next
+                </button>
+            </div>
+            <a href="{{ url_for('owner_new_reservation') }}" class="btn btn-gradient ms-2">
+                <i class="fas fa-plus"></i> New Reservation
+            </a>
+        </div>
+    </div>
+
+    <!-- Calendar Legend -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card" style="border-radius: 10px;">
+                <div class="card-body py-2">
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <small class="fw-bold">Legend:</small>
+                        <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            🎨 Art Activity
+                        </span>
+                        <span class="badge" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            👨‍🎨 Art Session
+                        </span>
+                        <span class="badge" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            🎪 Event
+                        </span>
+                        <span class="badge bg-success">Confirmed</span>
+                        <span class="badge bg-warning">Pending</span>
+                        <span class="badge bg-info">Completed</span>
+                        <span class="badge bg-secondary">Cancelled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="row">
+        <div class="col-12">
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Reservation Detail Modal -->
+<div class="modal fade" id="reservationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header text-white" id="modalHeader" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="modalTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="editReservationBtn" class="btn btn-gradient">
+                    <i class="fas fa-edit"></i> Edit Reservation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<style>
+    .fc {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .fc-toolbar-title {
+        color: #667eea;
+        font-weight: 700;
+    }
+    
+    .fc-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        text-transform: capitalize !important;
+    }
+    
+    .fc-button:hover {
+        opacity: 0.9;
+    }
+    
+    .fc-button-active {
+        opacity: 1 !important;
+    }
+    
+    .fc-event {
+        border: none !important;
+        border-radius: 5px !important;
+        padding: 2px 5px !important;
+        cursor: pointer !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .fc-event:hover {
+        opacity: 0.8;
+    }
+    
+    .fc-daygrid-day-number {
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .fc-day-today {
+        background-color: #e3f2fd !important;
+    }
+    
+    .event-art_activity {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .event-art_session {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    
+    .event-event {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .status-pending {
+        border-left: 4px solid #ffc107 !important;
+    }
+    
+    .status-confirmed {
+        border-left: 4px solid #28a745 !important;
+    }
+    
+    .status-completed {
+        border-left: 4px solid #17a2b8 !important;
+    }
+    
+    .status-cancelled {
+        opacity: 0.5;
+        text-decoration: line-through;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    let calendar;
+    
+    // Initialize calendar
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        height: 'auto',
+        events: '/api/calendar/events',
+        eventClick: function(info) {
+            showReservationDetails(info.event);
+        },
+        eventDidMount: function(info) {
+            // Add custom classes based on reservation type and status
+            const type = info.event.extendedProps.reservation_type;
+            const status = info.event.extendedProps.status;
+            
+            info.el.classList.add(`event-${type}`);
+            info.el.classList.add(`status-${status}`);
+            
+            // Add tooltip
+            info.el.title = `${info.event.title}\n${info.event.extendedProps.client_name}\n${status.toUpperCase()}`;
+        },
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            meridiem: 'short'
+        }
+    });
+    
+    calendar.render();
+    
+    // Navigation buttons
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        calendar.prev();
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        calendar.next();
+    });
+    
+    document.getElementById('todayBtn').addEventListener('click', () => {
+        calendar.today();
+    });
+    
+    function showReservationDetails(event) {
+        const props = event.extendedProps;
+        const modal = new bootstrap.Modal(document.getElementById('reservationModal'));
+        
+        // Set modal header color based on type
+        const header = document.getElementById('modalHeader');
+        if (props.reservation_type === 'art_activity') {
+            header.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        } else if (props.reservation_type === 'art_session') {
+            header.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+        } else {
+            header.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+        }
+        
+        // Set title
+        document.getElementById('modalTitle').innerHTML = `
+            <i class="fas fa-${props.reservation_type === 'art_activity' ? 'brush' : props.reservation_type === 'art_session' ? 'palette' : 'calendar-star'}"></i>
+            ${event.title}
+        `;
+        
+        // Status badge color
+        const statusColors = {
+            'pending': 'warning',
+            'confirmed': 'success',
+            'completed': 'info',
+            'cancelled': 'secondary'
+        };
+        
+        // Set body content
+        document.getElementById('modalBody').innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-2">Client Information</h6>
+                    <p class="mb-1"><i class="fas fa-user"></i> <strong>${props.client_name}</strong></p>
+                    <p class="mb-1"><i class="fas fa-envelope"></i> ${props.client_email}</p>
+                    ${props.client_phone ? `<p class="mb-1"><i class="fas fa-phone"></i> ${props.client_phone}</p>` : ''}
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-2">Reservation Details</h6>
+                    <p class="mb-1"><i class="fas fa-tag"></i> ${props.reservation_type.replace('_', ' ').toUpperCase()}</p>
+                    <p class="mb-1">
+                        <i class="fas fa-circle"></i>
+                        <span class="badge bg-${statusColors[props.status]}">${props.status.toUpperCase()}</span>
+                    </p>
+                </div>
+                <div class="col-12"><hr></div>
+                <div class="col-md-6">
+                    <p class="mb-1"><i class="fas fa-calendar"></i> <strong>${event.start.toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})}</strong></p>
+                    <p class="mb-1"><i class="fas fa-clock"></i> ${event.start.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</p>
+                    <p class="mb-1"><i class="fas fa-hourglass-half"></i> ${props.duration} minutes</p>
+                </div>
+                <div class="col-md-6">
+                    ${props.location ? `<p class="mb-1"><i class="fas fa-map-marker-alt"></i> ${props.location}</p>` : ''}
+                    ${props.price > 0 ? `<p class="mb-1"><i class="fas fa-dollar-sign"></i> $${parseFloat(props.price).toFixed(2)}</p>` : ''}
+                    ${props.payment_status ? `<p class="mb-1"><i class="fas fa-credit-card"></i> Payment: ${props.payment_status.toUpperCase()}</p>` : ''}
+                </div>
+                ${props.description ? `
+                <div class="col-12">
+                    <h6 class="text-muted mb-2">Description</h6>
+                    <p class="mb-0">${props.description}</p>
+                </div>
+                ` : ''}
+                ${props.special_requirements ? `
+                <div class="col-12">
+                    <div class="alert alert-warning mb-0">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Special Requirements:</strong><br>
+                        ${props.special_requirements}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Set edit button link
+        document.getElementById('editReservationBtn').href = `/owner/reservation/${props.id}/edit`;
+        
+        modal.show();
+    }
+});
+</script>
+{% endblock %}

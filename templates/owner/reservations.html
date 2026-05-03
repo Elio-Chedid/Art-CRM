@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <h1 class="mb-4">
+        <i class="fas fa-calendar-check gradient-text"></i> All Reservations
+    </h1>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status" onchange="this.form.submit()">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" name="type" onchange="this.form.submit()">
+                        <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All</option>
+                        <option value="art_activity" {% if type_filter == 'art_activity' %}selected{% endif %}>Art Activity</option>
+                        <option value="art_session" {% if type_filter == 'art_session' %}selected{% endif %}>Art Session</option>
+                        <option value="event" {% if type_filter == 'event' %}selected{% endif %}>Event</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search by title or client...">
+                        <button class="btn btn-gradient" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Reservations Table -->
+    {% if reservations.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Price</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reservation in reservations.items %}
+                        <tr>
+                            <td><span class="badge bg-secondary">#{{ reservation.id }}</span></td>
+                            <td>
+                                <a href="{{ url_for('client_detail', id=reservation.client.id) }}" class="text-decoration-none">
+                                    <i class="fas fa-user-circle"></i> {{ reservation.client.name }}
+                                </a>
+                            </td>
+                            <td><strong>{{ reservation.title }}</strong></td>
+                            <td>
+                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    {{ reservation.reservation_type.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>
+                                    <i class="fas fa-calendar"></i> {{ reservation.date.strftime('%b %d, %Y') }}<br>
+                                    <i class="fas fa-clock"></i> {{ reservation.date.strftime('%I:%M %p') }}
+                                </small>
+                            </td>
+                            <td>
+                                <strong class="text-success">${{ "%.2f"|format(reservation.price) }}</strong>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('update_payment_status', id=reservation.id) }}" class="d-inline">
+                                    <select class="form-select form-select-sm" name="payment_status" onchange="this.form.submit()"
+                                            style="width: 120px;">
+                                        <option value="unpaid" {% if reservation.payment_status == 'unpaid' %}selected{% endif %}>
+                                            💳 Unpaid
+                                        </option>
+                                        <option value="paid" {% if reservation.payment_status == 'paid' %}selected{% endif %}>
+                                            ✅ Paid
+                                        </option>
+                                        <option value="partial" {% if reservation.payment_status == 'partial' %}selected{% endif %}>
+                                            ⏳ Partial
+                                        </option>
+                                        <option value="refunded" {% if reservation.payment_status == 'refunded' %}selected{% endif %}>
+                                            ↩️ Refunded
+                                        </option>
+                                    </select>
+                                </form>
+                                {% if reservation.payment_method %}
+                                <small class="text-muted d-block">via {{ reservation.payment_method }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('update_reservation_status', id=reservation.id) }}" class="d-inline">
+                                    <select class="form-select form-select-sm" name="status" onchange="this.form.submit()">
+                                        <option value="pending" {% if reservation.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
+                                        <option value="confirmed" {% if reservation.status == 'confirmed' %}selected{% endif %}>✅ Confirmed</option>
+                                        <option value="completed" {% if reservation.status == 'completed' %}selected{% endif %}>✔️ Completed</option>
+                                        <option value="cancelled" {% if reservation.status == 'cancelled' %}selected{% endif %}>❌ Cancelled</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('edit_reservation', id=reservation.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if reservations.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if reservations.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ reservations.prev_num }}&status={{ status_filter }}&type={{ type_filter }}&search={{ search }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in reservations.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == reservations.page %}active{% endif %}">
+                        <a class="page-link" href="?page={{ page_num }}&status={{ status_filter }}&type={{ type_filter }}&search={{ search }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if reservations.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ reservations.next_num }}&status={{ status_filter }}&type={{ type_filter }}&search={{ search }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+        <p>No reservations found</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="gradient-text">
+                <i class="fas fa-home"></i> My Dashboard
+            </h1>
+            <p class="text-muted">Welcome back, {{ current_user.name }}! 👋</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('new_reservation') }}" class="btn btn-gradient">
+                <i class="fas fa-plus-circle"></i> New Reservation
+            </a>
+        </div>
+    </div>
+
+  
+    <!-- Quick Actions -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border-radius: 15px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white text-center py-4">
+                    <h4 class="mb-3">
+                        <i class="fas fa-paint-brush"></i> Ready to Book Your Next Art Experience?
+                    </h4>
+                    <p class="mb-3">Choose from painting, drawing, sculpture workshops and more!</p>
+                    <a href="{{ url_for('new_reservation') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus"></i> Create Reservation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Reservations -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i class="fas fa-calendar-day"></i> Upcoming Reservations
+            </h3>
+            {% if upcoming %}
+                <div class="row g-4">
+                    {% for reservation in upcoming %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card shadow-sm h-100" style="border-radius: 15px; border: none; overflow: hidden;">
+                            <div class="card-header text-white text-center py-3" 
+                                 style="background: linear-gradient(135deg, {{ ['#667eea 0%, #764ba2 100%', '#f093fb 0%, #f5576c 100%', '#4facfe 0%, #00f2fe 100%'][loop.index0 % 3] }});">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-{{ 'brush' if reservation.reservation_type == 'art_activity' else 'palette' if reservation.reservation_type == 'art_session' else 'calendar-star' }}"></i>
+                                    {{ reservation.reservation_type.replace('_', ' ').title() }}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ reservation.title }}</h5>
+                                <p class="card-text text-muted">{{ reservation.description[:100] }}{% if reservation.description and reservation.description|length > 100 %}...{% endif %}</p>
+                                
+                                <div class="mt-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-calendar text-primary"></i> 
+                                        <strong>{{ reservation.date.strftime('%B %d, %Y') }}</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <i class="fas fa-clock text-primary"></i> 
+                                        {{ reservation.date.strftime('%I:%M %p') }} ({{ reservation.duration }} min)
+                                    </div>
+                                    {% if reservation.location %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-map-marker-alt text-primary"></i> 
+                                        {{ reservation.location }}
+                                    </div>
+                                    {% endif %}
+                                    {% if reservation.price > 0 %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-dollar-sign text-success"></i> 
+                                        <strong>${{ "%.2f"|format(reservation.price) }}</strong>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <span class="badge" style="background: {{ 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' if reservation.status == 'pending' else 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}; padding: 8px 15px;">
+                                        {{ reservation.status.title() }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white border-0">
+                                {% if reservation.status in ['pending', 'confirmed'] %}
+                                <form method="POST" action="{{ url_for('cancel_reservation', id=reservation.id) }}" 
+                                      onsubmit="return confirm('Are you sure you want to cancel this reservation?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                        <i class="fas fa-times"></i> Cancel Reservation
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card shadow-sm" style="border-radius: 15px; border: none;">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Upcoming Reservations</h4>
+                        <p class="text-muted mb-4">Start your artistic journey today!</p>
+                        <a href="{{ url_for('new_reservation') }}" class="btn btn-gradient">
+                            <i class="fas fa-plus"></i> Create Your First Reservation
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i class="fas fa-history"></i> Recent Activity
+            </h3>
+            {% if past %}
+                <div class="card shadow-sm" style="border-radius: 15px; border: none;">
+                    <div class="list-group list-group-flush">
+                        {% for reservation in past %}
+                        <div class="list-group-item border-0">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-2">
+                                        <i class="fas fa-{{ 'brush' if reservation.reservation_type == 'art_activity' else 'palette' if reservation.reservation_type == 'art_session' else 'calendar-star' }} text-primary"></i>
+                                        {{ reservation.title }}
+                                    </h5>
+                                    <p class="mb-2 text-muted small">{{ reservation.reservation_type.replace('_', ' ').title() }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> {{ reservation.date.strftime('%B %d, %Y') }}
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-{{ 'success' if reservation.status == 'completed' else 'secondary' if reservation.status == 'cancelled' else 'info' }}" 
+                                          style="padding: 8px 15px;">
+                                        {{ reservation.status.title() }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr class="my-0">{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="card shadow-sm" style="border-radius: 15px; border: none;">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No past reservations</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <h1 class="mb-4">
+        <i class="fas fa-chart-line gradient-text"></i> Owner Dashboard
+    </h1>
+    <div class="col-auto">
+        <a href="{{ url_for('owner_new_reservation') }}" class="btn btn-gradient me-2">
+            <i class="fas fa-plus-circle"></i> New Reservation
+        </a>
+        <a href="{{ url_for('owner_settings') }}" class="btn btn-outline-primary">
+            <i class="fas fa-cog"></i> Settings
+        </a>
+    </div>
+   
+    <div class="row g-4">
+        <!-- Recent Reservations -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Recent Reservations</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reservation in recent %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('client_detail', id=reservation.client.id) }}">
+                                            {{ reservation.client.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ reservation.title }}</td>
+                                    <td><span class="badge bg-info">{{ reservation.reservation_type.replace('_', ' ').title() }}</span></td>
+                                    <td>{{ reservation.date.strftime('%b %d, %Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'warning' if reservation.status == 'pending' else 'success' if reservation.status == 'confirmed' else 'secondary' }}">
+                                            {{ reservation.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('update_reservation_status', id=reservation.id) }}" class="d-inline">
+                                            <select class="form-select form-select-sm" name="status" onchange="this.form.submit()">
+                                                <option value="pending" {% if reservation.status == 'pending' %}selected{% endif %}>Pending</option>
+                                                <option value="confirmed" {% if reservation.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                                <option value="completed" {% if reservation.status == 'completed' %}selected{% endif %}>Completed</option>
+                                                <option value="cancelled" {% if reservation.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">No reservations yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notifications & Upcoming -->
+        <div class="col-lg-4">
+            <!-- Notifications -->
+            <div class="card mb-4">
+                <div class="card-header bg-gradient-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-bell"></i> Notifications</h5>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    {% if notifications %}
+                        {% for notification in notifications %}
+                        <div class="notification-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ notification.title }}</h6>
+                                    <p class="text-muted small mb-1">{{ notification.message }}</p>
+                                    <small class="text-muted">{{ notification.created_at.strftime('%b %d, %I:%M %p') }}</small>
+                                </div>
+                                <button class="btn btn-sm btn-link text-success mark-read" data-id="{{ notification.id }}">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No new notifications</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Upcoming Reservations -->
+            <div class="card">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-day"></i> Upcoming</h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming %}
+                        <div class="list-group list-group-flush">
+                            {% for reservation in upcoming %}
+                            <div class="list-group-item px-0">
+                                <h6 class="mb-1">{{ reservation.title }}</h6>
+                                <p class="mb-1 text-muted small">{{ reservation.client.name }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> {{ reservation.date.strftime('%b %d, %I:%M %p') }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No upcoming reservations</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.mark-read').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const notificationId = this.dataset.id;
+        fetch(`/api/notifications/mark-read/${notificationId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.closest('.notification-item').style.opacity = '0.5';
+                updateNotificationCount();
+            }
+        });
+    });
+});
+
+function updateNotificationCount() {
+    fetch('/api/notifications/unread-count')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('notificationCount');
+            if (data.count > 0) {
+                badge.textContent = data.count;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+}
+
+// Update count every 30 seconds
+setInterval(updateNotificationCount, 30000);
+updateNotificationCount();
+</script>
+{% endblock %}

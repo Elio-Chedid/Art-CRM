@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <div class="row mb-4">
+        <div class="col">
+            <a href="{{ url_for('owner_clients') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Clients
+            </a>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Client Info -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if client.profile_pic %}
+                    <img src="{{ client.profile_pic }}" alt="{{ client.name }}" class="rounded-circle mb-3" width="120" height="120">
+                    {% else %}
+                    <i class="fas fa-user-circle fa-6x text-muted mb-3"></i>
+                    {% endif %}
+                    <h3>{{ client.name }}</h3>
+                    <p class="text-muted">{{ client.email }}</p>
+                    {% if client.phone %}
+                    <p><i class="fas fa-phone"></i> {{ client.phone }}</p>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="stat-box bg-gradient-1">
+                                    <h4>{{ stats.total_reservations }}</h4>
+                                    <small>Total</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-box bg-gradient-2">
+                                    <h4>{{ stats.completed }}</h4>
+                                    <small>Completed</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-box bg-gradient-3">
+                                    <h4>{{ stats.cancelled }}</h4>
+                                    <small>Cancelled</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-box bg-gradient-1">
+                                    <h4>${{ "%.2f"|format(stats.total_spent) }}</h4>
+                                    <small>Total Spent</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-muted">
+                        <small>Joined: {{ client.created_at.strftime('%B %d, %Y') }}</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Note -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Add Note</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_client_note', id=client.id) }}">
+                        <textarea class="form-control mb-3" name="note" rows="4" required placeholder="Add a note about this client..."></textarea>
+                        <button type="submit" class="btn btn-gradient w-100">
+                            <i class="fas fa-plus"></i> Add Note
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reservations & Notes -->
+        <div class="col-lg-8">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#reservations">
+                        <i class="fas fa-calendar"></i> Reservations ({{ reservations|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#notes">
+                        <i class="fas fa-sticky-note"></i> Notes ({{ notes|length }})
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="tab-content">
+                <!-- Reservations Tab -->
+                <div id="reservations" class="tab-pane fade show active">
+                    {% if reservations %}
+                        {% for reservation in reservations %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5>{{ reservation.title }}</h5>
+                                        <p class="text-muted mb-2">{{ reservation.description }}</p>
+                                        <div class="reservation-meta">
+                                            <span><i class="fas fa-calendar"></i> {{ reservation.date.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                                            <span><i class="fas fa-clock"></i> {{ reservation.duration }} min</span>
+                                            <span><i class="fas fa-tag"></i> {{ reservation.reservation_type.replace('_', ' ').title() }}</span>
+                                            {% if reservation.price > 0 %}
+                                            <span><i class="fas fa-dollar-sign"></i> ${{ reservation.price }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-{{ 'warning' if reservation.status == 'pending' else 'success' if reservation.status == 'confirmed' else 'info' if reservation.status == 'completed' else 'secondary' }}">
+                                            {{ reservation.status.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p>No reservations yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Notes Tab -->
+                <div id="notes" class="tab-pane fade">
+                    {% if notes %}
+                        {% for note in notes %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <p class="mb-2">{{ note.note }}</p>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">By: {{ note.created_by }}</small>
+                                    <small class="text-muted">{{ note.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-sticky-note fa-3x text-muted mb-3"></i>
+                            <p>No notes yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

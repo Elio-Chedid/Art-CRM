@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg" style="border-radius: 15px; border: none;">
+                <div class="card-header bg-gradient-primary text-white" style="border-radius: 15px 15px 0 0;">
+                    <h2 class="mb-0">
+                        <i class="fas fa-plus-circle"></i> New Reservation
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <div class="alert alert-info mb-4" style="border-radius: 10px;">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Step 1:</strong> Choose a template below. 
+                        <strong>Step 2:</strong> Select your date/time and add any requirements.
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('new_reservation') }}" id="reservationForm">
+                        <div class="row g-3">
+                            <!-- Template Selection -->
+                            <div class="col-12">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-palette"></i> Choose Your Activity
+                                </h5>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    Select Activity Template <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select form-select-lg" id="templateSelect" required>
+                                    <option value="">Choose an activity...</option>
+                                    {% for template in templates %}
+                                    <option value="{{ template.id }}" 
+                                            data-type="{{ template.category }}"
+                                            data-title="{{ template.name }}"
+                                            data-description="{{ template.description }}"
+                                            data-duration="{{ template.default_duration }}"
+                                            data-price="{{ template.default_price }}"
+                                            data-max="{{ template.default_max_participants }}">
+                                        {{ template.name }} 
+                                        ({{ template.category.replace('_', ' ').title() }}) 
+                                        - ${{ "%.2f"|format(template.default_price) }} 
+                                        - {{ template.default_duration }} min
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Template Details (Read-only) -->
+                            <div class="col-12" id="templateDetails" style="display: none;">
+                                <div class="card bg-light" style="border-radius: 10px;">
+                                    <div class="card-body">
+                                        <h5 class="text-primary mb-3">Activity Details</h5>
+                                        
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold text-muted small">Activity Type</label>
+                                                    <input type="text" class="form-control" id="display_type" readonly 
+                                                           style="background: white;">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold text-muted small">Title</label>
+                                                    <input type="text" class="form-control" id="display_title" readonly 
+                                                           style="background: white;">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-12">
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold text-muted small">Description</label>
+                                                    <textarea class="form-control" id="display_description" rows="2" readonly 
+                                                              style="background: white;"></textarea>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold text-muted small">Duration</label>
+                                                    <input type="text" class="form-control" id="display_duration" readonly 
+                                                           style="background: white;">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold text-muted small">Price</label>
+                                                    <input type="text" class="form-control" id="display_price" readonly 
+                                                           style="background: white;">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-bold text-muted small">Max Participants</label>
+                                                    <input type="text" class="form-control" id="display_max" readonly 
+                                                           style="background: white;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-3 p-2 bg-white rounded" style="border-left: 4px solid #667eea;">
+                                            <small class="text-muted">
+                                                <i class="fas fa-lock"></i> These details are set by the organizer and cannot be modified.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden fields for form submission -->
+                            <input type="hidden" name="reservation_type" id="hidden_type">
+                            <input type="hidden" name="title" id="hidden_title">
+                            <input type="hidden" name="description" id="hidden_description">
+                            <input type="hidden" name="duration" id="hidden_duration">
+                            <input type="hidden" name="price" id="hidden_price">
+                            <input type="hidden" name="max_participants" id="hidden_max">
+                            
+                            <div class="col-12"><hr></div>
+                            
+                         <!-- Client Input Fields -->
+<div class="col-12">
+    <h5 class="mb-3">
+        <i class="fas fa-user"></i> Your Contact Information
+    </h5>
+</div>
+
+<div class="col-md-6">
+    <label class="form-label fw-bold">
+        Phone Number <span class="text-danger">*</span>
+    </label>
+    <input type="tel" class="form-control" name="phone" required 
+           value="{{ current_user.phone or '' }}"
+           placeholder="+1 (555) 123-4567"
+           pattern="[0-9+\-\(\)\s]+"
+           id="clientPhone">
+    <small class="text-muted">We'll use this to contact you about your reservation</small>
+</div>
+
+<div class="col-12"><hr></div>
+
+<div class="col-12">
+    <h5 class="mb-3">
+        <i class="fas fa-calendar-alt"></i> Choose Your Schedule
+    </h5>
+</div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    Date & Time <span class="text-danger">*</span>
+                                </label>
+                                <input type="datetime-local" class="form-control" name="date" required 
+                                       id="reservationDate">
+                                <small class="text-muted">Select your preferred date and time</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Location</label>
+                                <input type="text" class="form-control" name="location" 
+                                       placeholder="e.g., Studio A, Virtual, Off-site...">
+                                <small class="text-muted">Where would you like this activity?</small>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Special Requirements</label>
+                                <textarea class="form-control" name="special_requirements" rows="3" 
+                                          placeholder="Any special requests, accessibility needs, materials questions..."></textarea>
+                                <small class="text-muted">Let us know about any special requirements or questions</small>
+                            </div>
+                            
+                            <div class="col-12"><hr></div>
+                            
+                            <!-- Summary -->
+                            <div class="col-12" id="reservationSummary" style="display: none;">
+                                <div class="card bg-light" style="border-radius: 10px;">
+                                    <div class="card-body">
+                                        <h5 class="text-primary mb-3">
+                                            <i class="fas fa-clipboard-check"></i> Reservation Summary
+                                        </h5>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Activity:</strong> <span id="summary_title"></span></p>
+                                                <p class="mb-1"><strong>Date:</strong> <span id="summary_date"></span></p>
+                                                <p class="mb-1"><strong>Duration:</strong> <span id="summary_duration"></span></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Price:</strong> <span id="summary_price" class="text-success"></span></p>
+                                                <p class="mb-1"><strong>Location:</strong> <span id="summary_location"></span></p>
+                                                <p class="mb-1"><strong>Requirements:</strong> <span id="summary_requirements"></span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Buttons -->
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-gradient btn-lg" id="submitBtn" disabled>
+                                    <i class="fas fa-check"></i> Create Reservation
+                                </button>
+                                <a href="{{ url_for('client_dashboard') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <small id="submitHelp" class="text-muted ms-2">Please select a template first</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const templateSelect = document.getElementById('templateSelect');
+    const templateDetails = document.getElementById('templateDetails');
+    const reservationSummary = document.getElementById('reservationSummary');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitHelp = document.getElementById('submitHelp');
+    const reservationDate = document.getElementById('reservationDate');
+    const locationInput = document.querySelector('[name="location"]');
+    const requirementsInput = document.querySelector('[name="special_requirements"]');
+    
+    // Set minimum date to today
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    reservationDate.min = now.toISOString().slice(0, 16);
+    
+    // Set default date to tomorrow same time
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    reservationDate.value = tomorrow.toISOString().slice(0, 16);
+    
+    // Handle template selection
+    templateSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (selectedOption.value) {
+            // Show template details
+            templateDetails.style.display = 'block';
+            reservationSummary.style.display = 'block';
+            submitBtn.disabled = false;
+            submitHelp.style.display = 'none';
+            
+            // Fill in display fields
+            document.getElementById('display_type').value = selectedOption.dataset.type.replace('_', ' ').toUpperCase();
+            document.getElementById('display_title').value = selectedOption.dataset.title;
+            document.getElementById('display_description').value = selectedOption.dataset.description;
+            document.getElementById('display_duration').value = selectedOption.dataset.duration + ' minutes';
+            document.getElementById('display_price').value = '$' + parseFloat(selectedOption.dataset.price).toFixed(2);
+            document.getElementById('display_max').value = selectedOption.dataset.max + ' people';
+            
+            // Fill in hidden fields
+            document.getElementById('hidden_type').value = selectedOption.dataset.type;
+            document.getElementById('hidden_title').value = selectedOption.dataset.title;
+            document.getElementById('hidden_description').value = selectedOption.dataset.description;
+            document.getElementById('hidden_duration').value = selectedOption.dataset.duration;
+            document.getElementById('hidden_price').value = selectedOption.dataset.price;
+            document.getElementById('hidden_max').value = selectedOption.dataset.max;
+            
+            // Update summary
+            updateSummary(selectedOption);
+        } else {
+            // Hide details
+            templateDetails.style.display = 'none';
+            reservationSummary.style.display = 'none';
+            submitBtn.disabled = true;
+            submitHelp.style.display = 'inline';
+        }
+    });
+    
+    function updateSummary(option) {
+        document.getElementById('summary_title').textContent = option.dataset.title;
+        document.getElementById('summary_duration').textContent = option.dataset.duration + ' minutes';
+        document.getElementById('summary_price').textContent = '$' + parseFloat(option.dataset.price).toFixed(2);
+        
+        updateDateSummary();
+        updateLocationSummary();
+        updateRequirementsSummary();
+    }
+    
+    function updateDateSummary() {
+        const dateVal = reservationDate.value;
+        if (dateVal) {
+            const date = new Date(dateVal);
+            document.getElementById('summary_date').textContent = date.toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } else {
+            document.getElementById('summary_date').textContent = 'Not selected';
+        }
+    }
+    
+    function updateLocationSummary() {
+        const locVal = locationInput.value;
+        document.getElementById('summary_location').textContent = locVal || 'Not specified';
+    }
+    
+    function updateRequirementsSummary() {
+        const reqVal = requirementsInput.value;
+        document.getElementById('summary_requirements').textContent = reqVal || 'None';
+    }
+    
+    // Update summary when fields change
+    reservationDate.addEventListener('change', updateDateSummary);
+    locationInput.addEventListener('input', updateLocationSummary);
+    requirementsInput.addEventListener('input', updateRequirementsSummary);
+});
+</script>
+{% endblock %}

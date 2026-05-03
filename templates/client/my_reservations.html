@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="mb-4">
+        <i class="fas fa-calendar gradient-text"></i> My Reservations
+    </h1>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status" onchange="this.form.submit()">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Reservations List -->
+    {% if reservations.items %}
+        <div class="row g-4">
+            {% for reservation in reservations.items %}
+            <div class="col-md-6">
+                <div class="reservation-card">
+                    <div class="reservation-header bg-gradient-{{ loop.index % 3 + 1 }}">
+                        <span class="badge bg-white text-dark">
+                            {{ reservation.reservation_type.replace('_', ' ').title() }}
+                        </span>
+                        <span class="badge bg-{{ 'warning' if reservation.status == 'pending' else 'success' if reservation.status == 'confirmed' else 'secondary' }}">
+                            {{ reservation.status.title() }}
+                        </span>
+                    </div>
+                    <div class="reservation-body">
+                        <h4>{{ reservation.title }}</h4>
+                        <p class="text-muted">{{ reservation.description[:150] }}{% if reservation.description|length > 150 %}...{% endif %}</p>
+                        
+                        <div class="reservation-meta">
+                            <div><i class="fas fa-calendar"></i> {{ reservation.date.strftime('%B %d, %Y') }}</div>
+                            <div><i class="fas fa-clock"></i> {{ reservation.date.strftime('%I:%M %p') }}</div>
+                            <div><i class="fas fa-hourglass-half"></i> {{ reservation.duration }} min</div>
+                            {% if reservation.price > 0 %}
+                            <div><i class="fas fa-dollar-sign"></i> ${{ reservation.price }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if reservation.location %}
+                        <div class="mt-2">
+                            <i class="fas fa-map-marker-alt"></i> {{ reservation.location }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mt-3">
+                            {% if reservation.status in ['pending', 'confirmed'] %}
+                            <form method="POST" action="{{ url_for('cancel_reservation', id=reservation.id) }}" class="d-inline" 
+                                  onsubmit="return confirm('Are you sure you want to cancel this reservation?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if reservations.pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if reservations.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ reservations.prev_num }}&status={{ status_filter }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in reservations.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == reservations.page %}active{% endif %}">
+                            <a class="page-link" href="?page={{ page_num }}&status={{ status_filter }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if reservations.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ reservations.next_num }}&status={{ status_filter }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+            <p>No reservations found</p>
+            <a href="{{ url_for('new_reservation') }}" class="btn btn-gradient">Create Your First Reservation</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

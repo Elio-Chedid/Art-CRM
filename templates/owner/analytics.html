@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <h1 class="mb-4">
+        <i class="fas fa-chart-pie gradient-text"></i> Analytics
+    </h1>
+    
+    <div class="row g-4">
+        <!-- Revenue Chart -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-dollar-sign"></i> Revenue (Last 6 Months)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reservation Types -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Reservation Types</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Distribution -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tasks"></i> Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% set type_dict = dict(type_data) %}
+                        <div class="col-6">
+                            <div class="stat-box bg-gradient-1">
+                                <h4>{{ type_dict.get('art_activity', 0) }}</h4>
+                                <small>Art Activities</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-box bg-gradient-2">
+                                <h4>{{ type_dict.get('art_session', 0) }}</h4>
+                                <small>Art Sessions</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-box bg-gradient-3">
+                                <h4>{{ type_dict.get('event', 0) }}</h4>
+                                <small>Events</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-box bg-gradient-1">
+                                <h4>{{ (revenue_data|map(attribute=1)|sum or 0)|round(2) }}</h4>
+                                <small>Total Revenue ($)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: {{ revenue_data|map(attribute=0)|list|tojson }},
+        datasets: [{
+            label: 'Revenue ($)',
+            data: {{ revenue_data|map(attribute=1)|list|tojson }},
+            borderColor: 'rgb(102, 126, 234)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true
+            }
+        }
+    }
+});
+
+// Type Chart
+const typeCtx = document.getElementById('typeChart').getContext('2d');
+new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ type_data|map(attribute=0)|map('replace', '_', ' ')|map('title')|list|tojson }},
+        datasets: [{
+            data: {{ type_data|map(attribute=1)|list|tojson }},
+            backgroundColor: [
+                'rgba(102, 126, 234, 0.8)',
+                'rgba(118, 75, 162, 0.8)',
+                'rgba(240, 147, 251, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true
+    }
+});
+
+// Status Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ status_data|map(attribute=0)|map('title')|list|tojson }},
+        datasets: [{
+            label: 'Count',
+            data: {{ status_data|map(attribute=1)|list|tojson }},
+            backgroundColor: 'rgba(102, 126, 234, 0.8)'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

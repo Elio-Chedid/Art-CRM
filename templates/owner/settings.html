@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="mb-4">
+        <i class="fas fa-cog gradient-text"></i> Settings
+    </h1>
+    
+    <div class="row g-4">
+        <!-- Activity Templates -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm" style="border-radius: 15px; border: none;">
+                <div class="card-header bg-gradient-primary text-white" style="border-radius: 15px 15px 0 0;">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Activity Templates</h5>
+                </div>
+                <div class="card-body">
+                    {% if templates %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Duration</th>
+                                    <th>Price</th>
+                                    <th>Capacity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for template in templates %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ template.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                            {% if template.category == 'art_activity' %}
+                                                🎨 Art Activity
+                                            {% elif template.category == 'art_session' %}
+                                                👨‍🎨 Art Session
+                                            {% else %}
+                                                🎪 Event
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td><i class="fas fa-clock"></i> {{ template.default_duration }} min</td>
+                                    <td>
+                                        <strong class="text-success">${{ "%.2f"|format(template.default_price) }}</strong>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-users"></i> {{ template.default_max_participants }}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if template.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ 'Active' if template.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="editTemplate({{ template.id }})" 
+                                                    data-bs-toggle="modal" data-bs-target="#editTemplateModal"
+                                                    data-id="{{ template.id }}"
+                                                    data-name="{{ template.name }}"
+                                                    data-description="{{ template.description }}"
+                                                    data-category="{{ template.category }}"
+                                                    data-duration="{{ template.default_duration }}"
+                                                    data-price="{{ template.default_price }}"
+                                                    data-max="{{ template.default_max_participants }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form method="POST" action="{{ url_for('delete_template', id=template.id) }}" 
+                                                  onsubmit="return confirm('Are you sure you want to delete this template?\n\nTemplate: {{ template.name }}\n\nThis action cannot be undone!');" 
+                                                  class="d-inline">
+                                                <button type="submit" class="btn btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-list-ul fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Templates Yet</h4>
+                        <p class="text-muted">Create your first activity template to get started.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add/Edit Template Form -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" style="border-radius: 15px; border: none; position: sticky; top: 20px;">
+                <div class="card-header bg-gradient-secondary text-white" style="border-radius: 15px 15px 0 0;">
+                    <h5 class="mb-0"><i class="fas fa-plus"></i> Add New Template</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_template') }}">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" name="name" required 
+                                   placeholder="e.g., Watercolor Workshop">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" name="description" rows="2" 
+                                      placeholder="Brief description of the activity..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" name="category" required>
+                                <option value="">Select category...</option>
+                                <option value="art_activity">🎨 Art Activity</option>
+                                <option value="art_session">👨‍🎨 Art Session</option>
+                                <option value="event">🎪 Event</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Duration (minutes) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" name="duration" value="60" 
+                                   min="15" max="480" required>
+                            <small class="text-muted">Between 15 and 480 minutes</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Price ($) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" step="0.01" class="form-control" name="price" 
+                                   value="0" min="0" required>
+                            <small class="text-muted">Set to 0 for free events</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Max Participants <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" name="max_participants" 
+                                   value="10" min="1" required>
+                            <small class="text-muted">Capacity limit for this activity</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-gradient w-100">
+                            <i class="fas fa-plus"></i> Add Template
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Template Modal -->
+<div class="modal fade" id="editTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none;">
+            <div class="modal-header bg-gradient-primary text-white" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Edit Template
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editTemplateForm" method="POST" action="">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" name="name" id="edit_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Category <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" name="category" id="edit_category" required>
+                            <option value="art_activity">🎨 Art Activity</option>
+                            <option value="art_session">👨‍🎨 Art Session</option>
+                            <option value="event">🎪 Event</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Duration (minutes) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control" name="duration" id="edit_duration" 
+                               min="15" max="480" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Price ($) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" step="0.01" class="form-control" name="price" 
+                               id="edit_price" min="0" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Max Participants <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control" name="max_participants" 
+                               id="edit_max_participants" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-gradient">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editTemplate(id) {
+    // Get the row data
+    const row = document.querySelector(`tr td .btn-outline-primary[data-id="${id}"]`);
+    const data = row.dataset;
+    
+    // Set form action
+    document.getElementById('editTemplateForm').action = `/owner/template/${id}/edit`;
+    
+    // Fill in the modal fields
+    document.getElementById('edit_name').value = data.name;
+    document.getElementById('edit_description').value = data.description;
+    document.getElementById('edit_category').value = data.category;
+    document.getElementById('edit_duration').value = data.duration;
+    document.getElementById('edit_price').value = data.price;
+    document.getElementById('edit_max_participants').value = data.max;
+}
+</script>
+{% endblock %}

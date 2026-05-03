@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <h1 class="mb-4">
+        <i class="fas fa-users gradient-text"></i> Clients
+    </h1>
+    
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search by name or email...">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-gradient w-100" type="submit">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Clients Table -->
+    {% if clients.items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Joined</th>
+                            <th>Last Login</th>
+                            <th>Reservations</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if client.profile_pic %}
+                                    <img src="{{ client.profile_pic }}" alt="{{ client.name }}" class="rounded-circle me-2" width="40" height="40">
+                                    {% else %}
+                                    <i class="fas fa-user-circle fa-2x me-2 text-muted"></i>
+                                    {% endif %}
+                                    <span>{{ client.name }}</span>
+                                </div>
+                            </td>
+                            <td>{{ client.email }}</td>
+                            <td>{{ client.phone or 'N/A' }}</td>
+                            <td>{{ client.created_at.strftime('%b %d, %Y') }}</td>
+                            <td>{{ client.last_login.strftime('%b %d, %Y') if client.last_login else 'Never' }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ client.reservations|length }}</span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('client_detail', id=client.id) }}" class="btn btn-sm btn-gradient">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if clients.pages > 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if clients.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ clients.prev_num }}&search={{ search }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in clients.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == clients.page %}active{% endif %}">
+                        <a class="page-link" href="?page={{ page_num }}&search={{ search }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if clients.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ clients.next_num }}&search={{ search }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-users-slash fa-4x text-muted mb-3"></i>
+        <p>No clients found</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg" style="border-radius: 15px; border: none;">
+                <div class="card-header bg-gradient-primary text-white" style="border-radius: 15px 15px 0 0;">
+                    <h2 class="mb-0">
+                        <i class="fas fa-plus-circle"></i> Create New Reservation (Owner)
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('owner_new_reservation') }}" id="reservationForm">
+                        <div class="row g-3">
+                            <!-- Client Information -->
+<div class="col-12">
+    <h5 class="mb-3"><i class="fas fa-user"></i> Client Information</h5>
+</div>
+
+<div class="col-md-6">
+    <label class="form-label fw-bold">Existing Client</label>
+    <select class="form-select" id="existingClient">
+        <option value="">Select existing client...</option>
+        {% for client in clients %}
+        <option value="{{ client.email }}" 
+                data-name="{{ client.name }}"
+                data-phone="{{ client.phone or '' }}">
+            {{ client.name }} ({{ client.email }})
+            {% if client.phone %} - {{ client.phone }}{% endif %}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="col-md-6">
+    <label class="form-label fw-bold">Or Enter New Client Email <span class="text-danger">*</span></label>
+    <input type="email" class="form-control" name="client_email" id="client_email" required>
+</div>
+
+<div class="col-md-6">
+    <label class="form-label fw-bold">Client Name <span class="text-danger">*</span></label>
+    <input type="text" class="form-control" name="client_name" id="client_name" required>
+    <small class="text-muted">Auto-filled for existing clients</small>
+</div>
+
+<div class="col-md-6">
+    <label class="form-label fw-bold">Client Phone <span class="text-danger">*</span></label>
+    <input type="tel" class="form-control" name="client_phone" id="client_phone" required
+           placeholder="+1 (555) 123-4567"
+           pattern="[0-9+\-\(\)\s]+">
+    <small class="text-muted">Required for all reservations</small>
+</div>
+                            <!-- Reservation Details -->
+                            <div class="col-12">
+                                <h5 class="mb-3"><i class="fas fa-calendar"></i> Reservation Details</h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Reservation Type *</label>
+                                <select class="form-select" name="reservation_type" required>
+                                    <option value="">Choose...</option>
+                                    <option value="art_activity">🎨 Art Activity</option>
+                                    <option value="art_session">👨‍🎨 Art Session</option>
+                                    <option value="event">🎪 Event</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Use Template (Optional)</label>
+                                <select class="form-select" id="templateSelect">
+                                    <option value="">Choose a template...</option>
+                                    {% for template in templates %}
+                                    <option value="{{ template.id }}" 
+                                            data-name="{{ template.name }}"
+                                            data-description="{{ template.description }}"
+                                            data-duration="{{ template.default_duration }}"
+                                            data-price="{{ template.default_price }}"
+                                            data-max="{{ template.default_max_participants }}"
+                                            data-category="{{ template.category }}">
+                                        {{ template.name }} - ${{ template.default_price }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Title *</label>
+                                <input type="text" class="form-control" name="title" id="title" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Description</label>
+                                <textarea class="form-control" name="description" id="description" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Date & Time *</label>
+                                <input type="datetime-local" class="form-control" name="date" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Duration (minutes) *</label>
+                                <input type="number" class="form-control" name="duration" id="duration" value="60" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Max Participants</label>
+                                <input type="number" class="form-control" name="max_participants" id="max_participants" value="1">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Location</label>
+                                <input type="text" class="form-control" name="location" placeholder="Studio A, Gallery, etc.">
+                            </div>
+                            
+                            <div class="col-12"><hr></div>
+                            
+                            <!-- Payment Details -->
+                            <div class="col-12">
+                                <h5 class="mb-3"><i class="fas fa-dollar-sign"></i> Payment Details</h5>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Price ($) *</label>
+                                <input type="number" step="0.01" class="form-control" name="price" id="price" value="0" required>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Payment Status *</label>
+                                <select class="form-select" name="payment_status" required>
+                                    <option value="unpaid">💳 Unpaid</option>
+                                    <option value="paid">✅ Paid</option>
+                                    <option value="partial">⏳ Partial</option>
+                                    <option value="refunded">↩️ Refunded</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Payment Method</label>
+                                <select class="form-select" name="payment_method">
+                                    <option value="">Not specified</option>
+                                    <option value="cash">💵 Cash</option>
+                                    <option value="card">💳 Card</option>
+                                    <option value="bank_transfer">🏦 Bank Transfer</option>
+                                    <option value="paypal">PayPal</option>
+                                    <option value="stripe">Stripe</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Special Requirements</label>
+                                <textarea class="form-control" name="special_requirements" rows="2" 
+                                          placeholder="Materials needed, accessibility requirements, etc."></textarea>
+                            </div>
+                            
+                            <div class="col-12"><hr></div>
+                            
+                            <!-- Buttons -->
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-gradient btn-lg">
+                                    <i class="fas fa-check"></i> Create Reservation
+                                </button>
+                                <a href="{{ url_for('owner_reservations') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-fill from existing client
+document.getElementById('existingClient').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    if (selected.value) {
+        document.getElementById('client_email').value = selected.value;
+        document.getElementById('client_name').value = selected.dataset.name;
+        document.getElementById('client_phone').value = selected.dataset.phone || '';
+    }
+});
+
+// Auto-fill from template
+document.getElementById('templateSelect').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    if (selected.value) {
+        document.getElementById('title').value = selected.dataset.name;
+        document.getElementById('description').value = selected.dataset.description;
+        document.getElementById('duration').value = selected.dataset.duration;
+        document.getElementById('price').value = selected.dataset.price;
+        document.getElementById('max_participants').value = selected.dataset.max;
+        document.querySelector('[name="reservation_type"]').value = selected.dataset.category;
+    }
+});
+</script>
+{% endblock %}
